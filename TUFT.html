@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TUFT Price Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: linear-gradient(to bottom right, #ffffff, #e0f7ff);
+      border: 2px solid #0077cc;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 40px;
+      text-align: center;
+      width: 350px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #0077cc;
+    }
+
+    #price {
+      font-size: 36px;
+      font-weight: bold;
+      color: #222;
+      margin: 10px 0;
+    }
+
+    #status {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TUFT Price Monitor</h1>
+    <div id="price">Loading...</div>
+    <div id="status"></div>
+  </div>
+
+  <script>
+    const threshold = 0.0025;
+    let lastAlert = null;
+
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    function showNotification(message) {
+      if (Notification.permission === "granted") {
+        new Notification("TUFT Price Alert", {
+          body: message,
+          icon: "https://cryptologos.cc/logos/tether-usdt-logo.png"
+        });
+      }
+    }
+
+    async function fetchPrice() {
+      try {
+        const response = await fetch("https://api.dexscreener.com/latest/dex/pairs/bsc/0x717960a0ec09ffe5340ff36e35a8f3352390bac4");
+        const data = await response.json();
+        const price = parseFloat(data.pair.priceUsd);
+        document.getElementById("price").innerText = "$" + price.toFixed(6);
+
+        if (price > threshold && lastAlert !== "above") {
+          document.getElementById("status").innerText = "📈 Price is above $0.0025!";
+          showNotification("TUFT price is ABOVE $0.0025 🚀");
+          lastAlert = "above";
+        } else if (price < threshold && lastAlert !== "below") {
+          document.getElementById("status").innerText = "📉 Price is below $0.0025!";
+          showNotification("TUFT price is BELOW $0.0025 ⚠️");
+          lastAlert = "below";
+        } else if (price === threshold && lastAlert !== "equal") {
+          document.getElementById("status").innerText = "✅ Price is exactly $0.0025";
+          lastAlert = "equal";
+        }
+
+      } catch (error) {
+        document.getElementById("price").innerText = "Error fetching price";
+        document.getElementById("status").innerText = error.message;
+      }
+    }
+
+    fetchPrice();
+    setInterval(fetchPrice, 10000);
+  </script>
+</body>
+</html>
